@@ -266,8 +266,11 @@ def baseBg(sc, size=500, step=250):
             t.stamp()
             color_index += 1
 
+    t.goto(0, -25)
+    t.color("lightcyan3")
+    t.write("Arun", align="center", font=("helvetica", 35, "italic"))
+
     sc.update()
-    t.hideturtle()
 
 
 def testCirc(): # "firebrick4" "dodgerblue4" "khaki4" "darkgreen"
@@ -2286,7 +2289,7 @@ def rectHit(rcts):
 
 
 #baseWalls()
-#baseBg(sc)
+baseBg(sc)
 circ = testCirc()
 
 for item in circ:
