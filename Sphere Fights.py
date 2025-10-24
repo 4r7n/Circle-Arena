@@ -1,19 +1,177 @@
-import turtle, math, random
+import turtle, math, random, time, itertools
 from statistics import mean
+import tkinter as tk
+
+from collections import deque
+
+frame_times = deque(maxlen=60)
+
+root = tk.Tk()
+root.geometry("600x800")
+root.title("Aяυи")
+root.resizable(False,False)
+#root.attributes('-topmost', 1)
 
 
-turtle.hideturtle()
-turtle.speed("fastest")
-turtle.colormode(255)
+canvas = tk.Canvas(root, width=500, height=500)
+canvas.place(x=50, y=150, h=500, w=500)
 
-turtle.title("Arun")
+_real_Turtle = turtle.Turtle
+_real_Screen = turtle.Screen
 
-turtle.tracer(0)
+def warn_Turtle(*a, **kw):
+    print("⚠️ WARNING: turtle.Turtle() called — use RawTurtle(screen) instead!")
+    return _real_Turtle(*a, **kw)
 
-sc = turtle.Screen()
+def warn_Screen(*a, **kw):
+    print("⚠️ WARNING: turtle.Screen() called — you already have an embedded screen!")
+    return _real_Screen(*a, **kw)
+
+turtle.Turtle = warn_Turtle
+turtle.Screen = warn_Screen
+
+gtx = []
+
+class Graphic:
+    def __init__(self, x, y, q, s=False, ns=None):
+        self.x = x
+        self.y = y
+        self.q = q
+
+        self.name = tk.Button(root, bg="black", command = None, state="disabled", borderwidth=0)
+
+        if s==False:
+            self.name.place(x=self.x, y=self.y, height=4, width=4)
+
+        else:
+            self.name.place(x=self.x, y=self.y, height=s, width=s)
+
+        if not ns==None:
+            self.name['command'] = lambda : setndx(ns)
+            self.name['state'] = "normal"
+
+    def cl(self, cl):
+        self.name['bg'] = cl
+
+    def gq(self):
+        return self.q
+
+animcx = 0
+
+
+class RetroPanel(tk.Frame):
+    def __init__(self, master, title="Retro Display", width=300, height=100, x=10, y=10):
+        super().__init__(master, bg="#C0C0C0", bd=2, relief="ridge", width=width, height=height)
+        self.place(x=x, y=y, width=width, height=height)
+
+        outer = tk.Frame(self, bg="#C0C0C0", bd=2, relief="ridge")
+        outer.place(relx=0, rely=0, relwidth=1, relheight=1, x=4, y=4, width=-8, height=-8)
+
+        self.title_bar = tk.Frame(outer, bg="#000080", height=20)
+        self.title_bar.pack(fill="x")
+        self.title_label = tk.Label(
+            self.title_bar,
+            text=title,
+            bg="#000080",
+            fg="white",
+            font=("MS Sans Serif", 9, "bold")
+        )
+        self.title_label.pack(side="left", padx=6)
+
+        content = tk.Frame(outer, bg="#E0E0E0", relief="sunken", bd=2)
+        content.pack(fill="both", expand=True, padx=5, pady=(3, 5))
+
+        self.text_var = tk.StringVar(value="")
+        self.label = tk.Label(
+            content,
+            textvariable=self.text_var,
+            font=("Helvetica", 9, "bold"),
+            fg="#202020",
+            bg="#E0E0E0",
+            wraplength=width - 40,
+            justify="center"
+        )
+        self.label.pack(expand=True, fill="both", padx=4, pady=4)
+
+        self.shine = tk.Frame(outer, bg="#F8F8F8", height=2)
+        self.shine.pack(fill="x", side="bottom")
+
+        self.shine_colors = itertools.cycle(["#000080", "#1A1A8C", "#0000A8", "#000080", "#000066"])
+        self.animate_shine()
+
+    def animate_shine(self):
+        next_color = next(self.shine_colors)
+        self.title_bar.config(bg=next_color)
+        self.title_label.config(bg=next_color)
+        self.after(400, self.animate_shine)
+
+    def update_text(self, new_text: str, new_title: str = None):
+        self.text_var.set(new_text)
+        if new_title is not None:
+            self.title_label.config(text=new_title)
+        #self.update_idletasks()
+
+gtxstats = [RetroPanel(root, x=0, y=0, title=""), RetroPanel(root, x=300, y=0, title=""), RetroPanel(root, x=0, y=700, title=""), RetroPanel(root, x=300, y=700, title="")]
+
+
+sc = turtle.TurtleScreen(canvas)
+
+Q = 0
+for i in range(12):
+    gtx.append(Graphic(0, 100+50*i, Q, s=50))
+    Q+=1
+
+for i in range(10):
+    gtx.append(Graphic(50+50*i, 650, Q, s=50))
+    Q+=1
+
+for i in range(12):
+    gtx.append(Graphic(550, 650-50*i, Q, s=50))
+    Q+=1
+
+for i in range(10):
+    gtx.append(Graphic(500-50*i, 100, Q, s=50))
+    Q+=1
+
+
+
+def animgtx(xframe):
+    colors = [
+        # black → blue (11)
+        "#000000", "#000018", "#000030", "#000048", "#000060",
+        "#000078", "#000090", "#0000A8", "#0000C0", "#0000D8", "#0000F0",
+
+        # blue → white (11)
+        "#1818F0", "#3030F0", "#4848F0", "#6060F0", "#7878F0",
+        "#9090F0", "#A8A8F0", "#C0C0F0", "#D8D8F0", "#F0F0F0", "#FFFFFF",
+
+        # white → red (11)
+        "#FFE8E8", "#FFD0D0", "#FFB8B8", "#FFA0A0", "#FF8888",
+        "#FF7070", "#FF5858", "#FF4040", "#FF2828", "#FF1010", "#FF0000",
+
+        # red → black (11)
+        "#E00000", "#C00000", "#A00000", "#800000", "#600000",
+        "#400000", "#300000", "#200000", "#100000", "#080000", "#000000"
+    ]
+
+    for item in gtx:
+         item.cl(colors[(item.gq() + xframe) % len(colors)])
+
+animgtx(0)
+
+
+fps_label = tk.Label(root, text="FPS: 0", font=("Consolas", 8), bg="black", fg="white")
+fps_label.place(x=540, y=0)
+
+
+
+sc.colormode(255)
+
+sc.tracer(0)
 
 frameD = 120
-frame_delay_ms = 1000 // frameD
+lframeD = 200
+frame_delay_ms = 1000 // lframeD
 xframe = 0
 
 restit = 1
@@ -42,8 +200,7 @@ def ringGen(name="ring", color="black", thickness=3, step=1):
     sc.register_shape(name, ring)
 
 def baseWalls():
-    turtle.setup(width=600, height=800)
-    wall = turtle.Turtle()
+    wall = turtle.RawTurtle(sc)
     wall.hideturtle()
     wall.penup()
     wall.shape("square")
@@ -80,23 +237,59 @@ def baseWalls():
     wall.showturtle()
     wall.stamp()
 
-    turtle.update()
+    #turtle.update()
+
+
+def baseBg(sc, size=500, step=250):
+
+    colors = ["#ffffff", "#f9f9f9", "#f5f5f5", "#f0ede8", "#ece8e3", "#e8e8e8"]
+
+    t = turtle.RawTurtle(sc)
+    t.shape("square")
+    t.shapesize(step / 20)
+    t.penup()
+    t.speed(0)
+    t.hideturtle()
+    t.pen(fillcolor=colors[0], pencolor=colors[0])
+    sc.tracer(False)
+
+    start_x = int(-size // 2 + step / 2)
+    start_y = int(-size // 2 + step / 2)
+    color_index = 0
+
+    for y in range(start_y, start_y + size, step):
+        for x in range(start_x, start_x + size, step):
+            t.goto(x, y)
+            color = colors[color_index % len(colors)]
+            t.fillcolor(color)
+            t.pencolor(color)
+            t.stamp()
+            color_index += 1
+
+    sc.update()
+    t.hideturtle()
+
 
 def testCirc(): # "firebrick4" "dodgerblue4" "khaki4" "darkgreen"
     alpha = []
-    alpha.append(Ball(200, 0, 1, "shotgun", col="firebrick4", rad=3.5, ring=4, health=100))
-    alpha.append(Ball(-200, 0, 2, "sword", col="dodgerblue4", rad=3.5, ring=4, health=100))
+    alpha.append(Ball(200, 0, 1, "coin", col="firebrick4", rad=3.5, health=100))
+    alpha.append(Ball(-200, 0, 2, "bayonet", col="dodgerblue4", rad=3.5, health=100))
+    #alpha.append(Ball(0, -200, 1, "perfect", col="firebrick4", rad=3.5, health=100))
+    #alpha.append(Ball(0, 200, 2, "coin", col="dodgerblue4", rad=3.5, health=100))
 
 
 
     for item in alpha:
         item.setVel(random.randint(3, 7), random.randint(0, 360))
+        #item.setVel(6, 30)
 
 
     return alpha
 
+
+
 class Ball:
-    def __init__(self, x, y, team, weapon, m=1, col="gray", health=100, rad=1, ring=False):
+    def __init__(self, x, y, team, weapon, m=1, col="gray", health=100, rad=1, ring=4):
         [self.x, self.y] = [x, y]
 
         self.team = team
@@ -104,21 +297,28 @@ class Ball:
         self.weapon = weapon
         self.internal = 0
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
 
         self.t.penup()
         self.t.speed("fastest")
+
+        self.hash = str(random.getrandbits(128))
 
         if not ring:
             self.t.shape("circle")
             self.t.shapesize(rad, rad)
 
         else:
-            randN = str(random.getrandbits(128))
-            ringGen(name=randN, color=col, thickness=ring)
-            self.t.shape(randN)
+            self.damR = str(random.getrandbits(128))
+            ringGen(name=self.damR, color="brown1", thickness=ring)
+
+            self.defR = str(random.getrandbits(128))
+            ringGen(name=self.defR, color=col, thickness=ring)
+            self.t.shape(self.defR)
             self.t.shapesize(rad)
+
+
 
 
         self.rad = rad
@@ -139,7 +339,7 @@ class Ball:
 
 
 
-        self.label = turtle.Turtle()
+        self.label = turtle.RawTurtle(sc)
         self.label.hideturtle()
         self.label.penup()
         self.label.color(col)
@@ -154,6 +354,8 @@ class Ball:
         self.a = gravity
 
         self.im = False
+
+        self.nm = 0
 
     def getVel(self):
         return [self.m, self.v, self.theta]
@@ -173,7 +375,7 @@ class Ball:
         self.x, self.y = Nx, Ny
 
     def getTurt(self):
-        return [self.t, self.rad, self.team]
+        return [self.t, self.rad, self.team, self.hash]
 
     def getPos(self):
         return [self.x, self.y]
@@ -229,6 +431,9 @@ class Ball:
 
     def takeDamg(self, damg):
         self.health -= damg
+        self.label.color("brown1")
+        self.t.shape(self.damR)
+        self.label.write(str(self.health), align="center", font=("Helvetica", 16, "bold"))
         if self.health <= 0:
             self.kill()
 
@@ -242,14 +447,31 @@ class Ball:
         if self.count>0:
             self.count -=1
             self.label.color("brown1")
+            self.t.shape(self.damR)
         else:
             self.im = False
             self.label.color(self.col)
+            self.t.shape(self.defR)
 
         self.internal += 1
+        if self.nm>0:
+            self.nm -=1
+
+        self.label.clear()
+        if self.health>0:
+            self.label.write(str(self.health), align="center", font=("Helvetica", 16, "bold"))
+
 
     def getIntr(self):
         return self.internal
+
+    def getNm(self):
+        return self.nm
+
+    def setNm(self, st):
+        self.nm = st
+
+
 
 
 
@@ -317,6 +539,9 @@ class Weapon:
     def shoot(self, xframe):
         return []
 
+    def stats(self):
+        return ["", ""]
+
 
 HANDLE  = "#6b4226"
 GUARD   = "#c2a55f"
@@ -358,7 +583,7 @@ class Sword(Weapon):
         self.h = height
         self.dead = False
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
 
         self.t.penup()
@@ -387,7 +612,7 @@ class Sword(Weapon):
 
         self.t.showturtle()
 
-        #self.ts = turtle.Turtle()
+        #self.ts = turtle.RawTurtle(sc)
         #self.ts.shape("circle")
 
     def hit(self):
@@ -397,7 +622,7 @@ class Sword(Weapon):
         return [damg, self.knockback]
 
     def stats(self):
-        return "🗡️ Sword "+str(self.team)+"\nDamage: "+str(self.damage)+"\n\n"
+        return ["🗡️ Sword", "Damage: "+str(self.damage)+"\n+1 Damage on hit"]
 
 
 
@@ -428,7 +653,6 @@ width = max_x - min_x + 1
 height = max_y - min_y + 1
 shift_y = -min_y
 pixels_shifted = [(x, y + shift_y, col) for (x, y, col) in rotated]
-screen = turtle.Screen()
 shape = turtle.Shape("compound")
 for x, y, color in pixels_shifted:
     square = [(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
@@ -449,7 +673,7 @@ class Bow(Weapon):
         self.h = height
         self.dead = False
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
 
         self.t.penup()
@@ -510,7 +734,7 @@ class Bow(Weapon):
         return retr
 
     def stats(self):
-        return "🏹 Bow "+str(self.team)+"\nArrows: "+str(self.arrows)+"\n\n"
+        return ["🏹 Bow ", "Arrows: "+str(self.arrows)+"\n+1 Arrow on hit"]
 
 
 METAL = "#777777"
@@ -566,7 +790,7 @@ class Revolver(Weapon):
         self.h = height
         self.dead = False
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
 
         self.t.penup()
@@ -594,11 +818,11 @@ class Revolver(Weapon):
 
         self.t.showturtle()
 
-        #self.ts = turtle.Turtle()
+        #self.ts = turtle.RawTurtle(sc)
         #self.ts.shape("circle")
 
     def stats(self):
-        return ""
+        return ["Revolver 🔫", "1/4/14/44 Damage\n"+"/".join([str(int(round(item))) for item in self.probs])+"Probability\nProbability increases on hit"]
 
     def shoot(self, frame):
         def shooter(frame, accumulator, reload_frames=74, shoot_frames=34, bullets=4):
@@ -709,7 +933,7 @@ class Dagger(Weapon):
         self.h = height
         self.dead = False
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
 
         self.t.penup()
@@ -717,7 +941,7 @@ class Dagger(Weapon):
 
         self.knockback = 1.01
         self.type = "dagger"
-        self.stun = 0
+        self.stun = 1
 
         self.mlt = 1
 
@@ -741,18 +965,18 @@ class Dagger(Weapon):
         self.t.showturtle()
 
 
-        #self.ts = turtle.Turtle()
+        #self.ts = turtle.RawTurtle(sc)
         #self.ts.shape("circle")
 
 
     def hit(self):
         damg = int(str(self.damage))
-        self.mlt *= 1.25
+        self.mlt *= 1.24
 
         return [damg, self.knockback]
 
     def stats(self):
-        return "🗡️ Dagger "+str(self.team)+"\nSpin: "+str(self.spin_speed)+"\n\n"
+        return ["🗡️ Dagger ", "Spin Multi: "+str(round(self.mlt, 2))+"\nSpin increases on hit"]
 
     def update(self):
         self.theta = (self.theta + self.mlt * self.spin_speed * 1/frameD) % 360
@@ -821,7 +1045,7 @@ class Perfect(Weapon):
         self.h = height
         self.dead = False
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
 
         self.t.penup()
@@ -850,7 +1074,7 @@ class Perfect(Weapon):
 
         self.t.showturtle()
 
-        #self.ts = turtle.Turtle()
+        #self.ts = turtle.RawTurtle(sc)
         #self.ts.shape("circle")
 
     def hit(self):
@@ -863,7 +1087,7 @@ class Perfect(Weapon):
         self.damage = 1
 
     def stats(self):
-        return "🗡️ Perfect "+str(self.team)+"\nDamage: "+str(self.damage)+"\n\n"
+        return ["🗡️ Perfect ","Damage: "+str(self.damage)+"\n+4 Damage on hit\n Damage resets if hit"]
 
 METAL = "#777777"
 METAL_DARK = "#4b4b4b"
@@ -927,9 +1151,9 @@ for x, y, color in pixels_shifted:
     square = [(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
     shape.addcomponent(square, fill=color, outline=OUTLINE)
 
-sc.register_shape("shotgun", shape)
+sc.register_shape("haymaker", shape)
 
-class Shotgun(Weapon):
+class Haymaker(Weapon):
     def __init__(self, damage = 0, width = 25, height = 85):
 
         self.spin_speed = 810
@@ -940,14 +1164,14 @@ class Shotgun(Weapon):
         self.h = height
         self.dead = False
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
 
         self.t.penup()
         self.t.speed("fastest")
 
         self.knockback = 1.09
-        self.type = "shotgun"
+        self.type = "haymaker"
         self.reload = 64
         self.framel = []
 
@@ -963,16 +1187,16 @@ class Shotgun(Weapon):
 
         self.local_centre = (2, -5.2)
 
-        self.t.shape("shotgun")
+        self.t.shape("haymaker")
         self.t.shapesize(5, 5)
 
         self.t.showturtle()
 
-        #self.ts = turtle.Turtle()
+        #self.ts = turtle.RawTurtle(sc)
         #self.ts.shape("circle")
 
     def stats(self):
-        return ""
+        return ["🔫 Haymaker", "Reload Time: "+str(round(self.reload, 2))+"\nReload Speed increases on hit"]
 
     def getCtr(self):
         cx, cy = 2, -9
@@ -1046,7 +1270,7 @@ sc.register_shape("igneous", gold_deagle)
 class Igneous(Weapon):
     def __init__(self, damage = 0, width = 45, height = 30):
 
-        self.spin_speed = 200
+        self.spin_speed = 240
         self.x, self.y, self.theta = 0, 0, 0
 
         self.damage = damage
@@ -1054,7 +1278,7 @@ class Igneous(Weapon):
         self.h = height
         self.dead = False
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
 
         self.t.penup()
@@ -1084,11 +1308,11 @@ class Igneous(Weapon):
 
         self.t.showturtle()
 
-        #self.ts = turtle.Turtle()
+        #self.ts = turtle.RawTurtle(sc)
         #self.ts.shape("circle")
 
     def stats(self):
-        return ""
+        return ["🔫 Igneous", "Bullet Damage: "+str(4+self.dam)+"   Beam Duration: "+str(25+self.ext)+"\n+4 Damage and +25 Duration on bullet hit\n Laser every third shot"]
 
     def shoot(self, frame):
         retr = []
@@ -1097,16 +1321,316 @@ class Igneous(Weapon):
         ax = 1000 * math.cos(math.radians(self.theta-90)) * 1
         ay = 1000 * math.sin(math.radians(self.theta-90)) * 1
 
-        if frame%270==0:
-            retr.append(Beam(self.getCenter()[0] +ax , self.getCenter()[1] +ay, self.theta, self, 20+self.ext))
-        elif frame%90==0:
+        if frame%240==0:
+            retr.append(Beam(self.getCenter()[0] +ax , self.getCenter()[1] +ay, self.theta, self, 25+self.ext))
+        elif frame%80==0:
             retr.append(Hcal(self.getCenter()[0] + ax, self.getCenter()[1] +ay, self.theta, self ,4+self.dam))
 
         return retr
 
     def prhit(self):
         self.dam += 4
-        self.ext += 20
+        self.ext += 25
+
+
+
+WOOD      = "#6b4226"
+WOOD_DARK = "#4a2e1a"
+METAL     = "#6e6e6e"
+METAL_DARK= "#3f3f3f"
+BAYONET   = "#dfeef6"
+BAYONET_EDGE = "#9fb2bf"
+TRIGGER   = "#222222"
+SIGHT     = "#333333"
+OUTLINE   = ""
+
+pixels = [
+
+    (-3, 0, WOOD), (-2, 0, WOOD), (-1, 0, WOOD), (0, 0, WOOD),
+    (-3, 1, WOOD), (-2, 1, WOOD), (-1, 1, WOOD), (0, 1, WOOD),
+
+    (-4, 1, WOOD_DARK),
+
+    (-1, 2, WOOD), (0, 2, WOOD), (1, 2, WOOD),
+    (-1, 3, WOOD), (0, 3, WOOD),
+
+    (1, 2, TRIGGER), (1, 3, METAL_DARK), (2, 3, METAL),
+
+    (1, 4, METAL), (0, 4, METAL), (-1, 4, WOOD_DARK),
+    (1, 5, METAL), (0, 5, METAL),
+
+    (0, 6, WOOD), (1, 6, WOOD), (0, 7, WOOD), (1, 7, WOOD),
+
+    (1, 8, SIGHT),
+
+    (1, 9, WOOD), (2, 9, METAL), (3, 9, METAL),
+    (1,10, WOOD), (2,10, METAL), (3,10, METAL),
+
+    (1,11, WOOD), (2,11, METAL), (3,11, METAL),
+    (1,12, WOOD), (2,12, METAL),
+    (1,13, WOOD), (2,13, METAL),
+    (1,14, WOOD), (2,14, METAL),
+    (1,15, WOOD), (2,15, METAL),
+    (1,16, WOOD), (2,16, METAL),
+
+
+    (0,11, WOOD),
+    (0,12, WOOD),
+    (0,13, WOOD),
+    (0,14, WOOD),
+    (0,7, WOOD),
+    (0,10, WOOD),
+    (0,9, WOOD),
+    (0,8, WOOD),
+
+    (1,17, METAL_DARK), (2,17, BAYONET),
+    (1,18, BAYONET), (2,18, BAYONET),
+
+    (2,19, BAYONET), (1,20, BAYONET), (1,19, BAYONET),
+
+    (1,20, BAYONET_EDGE),
+
+
+]
+
+xs = [x for x, y, c in pixels]
+ys = [y for x, y, c in pixels]
+min_x, max_x = min(xs), max(xs)
+min_y, max_y = min(ys), max(ys)
+width = max_x - min_x + 1
+height = max_y - min_y + 1
+center_x = (min_x + max_x) / 2.0
+bottom_y = min_y
+pixels_shifted = [(x - center_x, y - bottom_y, c) for (x, y, c) in pixels]
+shape = turtle.Shape("compound")
+for x, y, color in pixels_shifted:
+    square = [(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
+    shape.addcomponent(square, fill=color, outline=OUTLINE)
+
+sc.register_shape("bayonet", shape)
+
+
+class Bayonet(Weapon):
+    def __init__(self, damage=2, width=84, height=24):
+        self.spin_speed = 940
+        self.x, self.y, self.theta = 0, 0, 0
+
+        self.damage = damage
+        self.w = width
+        self.h = height
+        self.dead = False
+
+        self.t = turtle.RawTurtle(sc)
+        self.t.hideturtle()
+
+        self.t.penup()
+        self.t.speed("fastest")
+
+        self.knockback = 1.08
+        self.type = "bayonet"
+        self.stun = 10
+
+        self.mag = 0
+        self.loading = 1
+
+    def start(self):
+        self.team = self.owner.getTurt()[2]
+
+        cx, cy = self.owner.getPos()[0], self.owner.getPos()[1]
+        r = self.owner.getTurt()[1]*10
+        tx = math.radians(self.theta)
+
+        self.local_centre = (8.5, -1)
+
+        px = cx + r * math.cos(tx)
+        py = cy + r * math.sin(tx)
+
+        self.t.goto(px, py)
+
+        self.t.shape("bayonet")
+        self.t.shapesize(4, 4)
+
+        self.fireRate = {}
+
+        for i in range(5):
+            self.fireRate[i] = 10
+        for i in range(5, 15):
+            self.fireRate[i] = 9
+        for i in range(15, 30):
+            self.fireRate[i] = 8
+        for i in range(30, 50):
+            self.fireRate[i] = 7
+        for i in range(50, 80):
+            self.fireRate[i] = 6
+        for i in range(80, 110):
+            self.fireRate[i] = 5
+        for i in range(110, 150):
+            self.fireRate[i] = 4
+        for i in range(150, 200):
+            self.fireRate[i] = 3
+        for i in range(200, 260):
+            self.fireRate[i] = 2
+
+        self.t.showturtle()
+
+
+
+
+        #self.ts = turtle.RawTurtle(sc)
+        #self.ts.shape("circle")
+
+    def hit(self):
+        self.mag += self.loading
+        self.loading += 6
+
+        return [self.damage, self.knockback]
+
+    def stats(self):
+        return ["🔫 Bayonet", "Bayonet Damage: 2   Bullet Damage: 3\n Magazine: "+str(self.mag)+"   Loads:"+str(self.loading)+"\nMag loads on Bayonet hit, ^Mag shoots faster\nBayonet +6 to load on hit and Bullet +2 load on hit"]
+
+
+    def prhit(self):
+        #self.mag += self.loading
+        self.loading += 2
+
+    def shoot(self, frame):
+        retr = []
+
+        if self.mag>=max(self.fireRate.keys()):
+            firer = 1
+        else:
+            firer = self.fireRate[self.mag]
+
+        ax = 40 * math.cos(math.radians(self.theta)) * 1
+        ay = 40 * math.sin(math.radians(self.theta)) * 1
+
+        if self.mag>0 and frame%firer==0:
+            retr.append(Bullet2(self.getCenter()[0] + ax, self.getCenter()[1] +ay, self.theta+90, self))
+            self.mag-=1
+
+        return retr
+
+
+GOLD_LIGHT = "#ffe066"
+GOLD_MED   = "#ffcc33"
+GOLD_DARK  = "#d4a017"
+SHADOW     = "#a67814"
+OUTLINE    = ""
+
+pixels = [
+
+    (-3, -1, GOLD_DARK), (-3, 0, GOLD_DARK), (-3, 1, GOLD_DARK),
+    (-2, -2, GOLD_DARK), (-2, 2, GOLD_DARK),
+    (-1, -3, GOLD_DARK), (-1, 3, GOLD_DARK),
+    (0, -3, GOLD_DARK),  (0, 3, GOLD_DARK),
+    (1, -3, GOLD_DARK),  (1, 3, GOLD_DARK),
+    (2, -2, GOLD_DARK),  (2, 2, GOLD_DARK),
+    (3, -1, GOLD_DARK),  (3, 0, GOLD_DARK), (3, 1, GOLD_DARK),
+    (-2, -1, GOLD_MED), (-2, 0, GOLD_MED), (-2, 1, GOLD_MED),
+    (-1, -2, GOLD_MED), (-1, -1, GOLD_MED), (-1, 0, GOLD_MED), (-1, 1, GOLD_MED), (-1, 2, GOLD_MED),
+    (0, -2, GOLD_MED),  (0, -1, GOLD_MED),  (0, 0, GOLD_MED),  (0, 1, GOLD_MED),  (0, 2, GOLD_MED),
+    (1, -2, GOLD_MED),  (1, -1, GOLD_MED),  (1, 0, GOLD_MED),  (1, 1, GOLD_MED),  (1, 2, GOLD_MED),
+    (2, -1, GOLD_MED),  (2, 0, GOLD_MED),  (2, 1, GOLD_MED),
+    (-1, 1, GOLD_LIGHT), (0, 1, GOLD_LIGHT), (-1, 0, GOLD_LIGHT),
+    (1, -1, SHADOW), (1, -2, SHADOW), (2, -1, SHADOW),
+]
+
+xs = [x for x, y, c in pixels]
+ys = [y for x, y, c in pixels]
+min_x, max_x = min(xs), max(xs)
+min_y, max_y = min(ys), max(ys)
+width = max_x - min_x + 1
+height = max_y - min_y + 1
+bottom_y = min_y
+pixels_shifted = [(x - center_x, y - bottom_y, c) for (x, y, c) in pixels]
+shape_name = "coin"
+shape = turtle.Shape("compound")
+for x, y, color in pixels_shifted:
+    square = [(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
+    shape.addcomponent(square, fill=color, outline=OUTLINE)
+sc.register_shape(shape_name, shape)
+
+
+class Coin(Weapon):
+    def __init__(self, damage=0, width=40, height=40):
+        self.spin_speed = 640
+        self.x, self.y, self.theta = 0, 0, 0
+
+        self.damage = damage
+        self.w = width
+        self.h = height
+        self.dead = False
+
+        self.t = turtle.RawTurtle(sc)
+        self.t.hideturtle()
+
+        self.t.penup()
+        self.t.speed("fastest")
+
+        self.knockback = 1.04
+        self.type = "coin"
+        self.stun = 10
+
+        self.cd = 0
+        self.ext = 0
+
+    def start(self):
+        self.team = self.owner.getTurt()[2]
+
+        cx, cy = self.owner.getPos()[0], self.owner.getPos()[1]
+        r = self.owner.getTurt()[1]*10
+        tx = math.radians(self.theta)
+
+        self.local_centre = (3.5, -1)
+
+        px = cx + r * math.cos(tx)
+        py = cy + r * math.sin(tx)
+
+        self.t.goto(px, py)
+
+        self.t.shape("coin")
+        self.t.shapesize(4, 4)
+
+        self.t.showturtle()
+
+
+        #self.ts = turtle.RawTurtle(sc)
+        #self.ts.shape("circle")
+
+    def hit(self):
+
+        return [self.damage, self.knockback]
+
+    def stats(self):
+        return ["💰 Coin", "Coin Damage: "+str(1+self.cd)+"   Laser Duration: "+str(30+self.ext)+"\n+1 Damage and +2 Duration on coin hit\n Shoots laser when coin lands on self"]
+
+
+    def prhit(self):
+        self.cd+=1
+        self.ext+=20
+
+    def shoot(self, frame):
+        retr = []
+
+        if frame%81==0 and self.owner.getNm()==0:
+            retr.append(Coinpr(self.getCenter()[0], self.getCenter()[1], self, 1+self.cd))
+
+        return retr
+
+    def prself(self):
+        retr = []
+        tx = math.radians(self.theta)
+
+        ax = 1000 * math.cos(math.radians(self.theta)) * 1
+        ay = 1000 * math.sin(math.radians(self.theta)) * 1
+
+        retr.append(Lazer(self.getCenter()[0]+ax, self.getCenter()[1]+ay, self.theta+90, self, 30+self.ext))
+        self.owner.setNm(30+self.ext)
+
+        return retr
+
+
+
 
 class Projectile:
     def __init__(self, damage, width, height):
@@ -1116,6 +1640,8 @@ class Projectile:
         self.w = width
         self.h = height
         self.dead = False
+
+        self.frames = 0
 
     def getCenter(self):
         cx, cy = self.local_centre
@@ -1155,6 +1681,8 @@ class Projectile:
     def getType(self):
         return self.type
 
+    def getFrames(self):
+        return self.frames
 
 SHAFT = "#8B4513"
 HEAD = "#555555"
@@ -1200,7 +1728,7 @@ class Arrow(Projectile):
 
         self.team = self.owner.getTeam()
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
         self.t.penup()
         self.t.shape("arrow")
@@ -1219,7 +1747,7 @@ class Arrow(Projectile):
 
 class Bullet(Projectile):
     def __init__(self, x, y, theta, owner, damage, colour, width = 8, height = 18):
-        self.v = 3000
+        self.v = 3200
         self.w = width
         self.h = height
         self.local_centre = (0, 0)
@@ -1232,7 +1760,7 @@ class Bullet(Projectile):
 
         self.team = self.owner.getTeam()
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
         self.t.penup()
         self.t.shape("square")
@@ -1267,7 +1795,7 @@ class Pellet(Projectile):
 
         self.team = self.owner.getTeam()
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
         self.t.penup()
         self.t.shape("circle")
@@ -1310,7 +1838,7 @@ class Hcal(Projectile):
 
         self.team = self.owner.getTeam()
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
         self.t.penup()
         self.t.shape("square")
@@ -1353,11 +1881,178 @@ class Beam(Projectile):
 
         self.team = self.owner.getTeam()
 
-        self.t = turtle.Turtle()
+        self.t = turtle.RawTurtle(sc)
         self.t.hideturtle()
         self.t.penup()
         self.t.shape("square")
         self.t.shapesize(100, 0.5)
+        self.t.color("greenyellow")
+        self.t.seth(self.theta)
+
+        self.t.goto(x, y)
+        self.t.showturtle()
+        self.stun = 1
+
+        self.frames = 0
+
+    def move(self):
+        dt = 1/frameD
+        dx = self.v * math.cos(math.radians(self.theta-90)) * dt
+        dy = self.v * math.sin(math.radians(self.theta-90)) * dt
+        self.setPos(self.x + dx, self.y + dy)
+        self.frames+=1
+
+    def lifetime(self):
+        return self.frames>self.lf
+
+
+CASE = "#c08b2b"
+TIP  = "#4a4a4a"
+SHINE = "#ffd98a"
+OUTLINE = ""
+pixels = [
+
+    (0, 1, CASE), (1, 1, CASE), (2, 1, CASE), (3, 1, CASE),
+    (0, 0, CASE), (1, 0, SHINE), (2, 0, CASE), (3, 0, CASE),
+    (0, -1, CASE), (1, -1, CASE), (2, -1, CASE), (3, -1, CASE),
+    (4, 0, CASE),
+    (5, 0, TIP), (6, 0, TIP)
+]
+xs = [x for x, y, c in pixels]
+ys = [y for x, y, c in pixels]
+min_x, max_x = min(xs), max(xs)
+min_y, max_y = min(ys), max(ys)
+width = max_x - min_x + 1
+height = max_y - min_y + 1
+center_x = (min_x + max_x + 1) / 2.0
+center_y = (min_y + max_y + 1) / 2.0
+pixels_shifted = [(x - center_x, y - center_y, c) for (x, y, c) in pixels]
+shape = turtle.Shape("compound")
+for x, y, color in pixels_shifted:
+    square = [(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
+    shape.addcomponent(square, fill=color, outline=OUTLINE)
+sc.register_shape("bullet2", shape)
+
+
+class Bullet2(Projectile):
+    def __init__(self, x, y, theta, owner, damage=3, colour="goldenrod", width = 15, height = 7):
+        self.v = 4269
+        self.w = width
+        self.h = height
+        self.local_centre = (0, 0)
+        self.damage = damage
+        self.owner = owner
+        self.col = colour
+        self.type = "bullet2"
+
+        self.x, self.y, self.theta = x, y, theta
+
+        self.team = self.owner.getTeam()
+
+        self.t = turtle.RawTurtle(sc)
+        self.t.hideturtle()
+        self.t.penup()
+        self.t.shape("bullet2")
+        self.t.shapesize(2.5, 2.5)
+        self.t.color(self.col)
+        self.t.seth(self.theta)
+
+        self.t.goto(self.x, self.y)
+        self.t.showturtle()
+        self.stun = 2
+
+    def move(self):
+        dt = 1/frameD
+        dx = self.v * math.cos(math.radians(self.theta-90)) * dt
+        dy = self.v * math.sin(math.radians(self.theta-90)) * dt
+        self.setPos(self.x + dx, self.y + dy)
+
+
+class Coinpr(Projectile):
+    def __init__(self, x, y,  owner, damage, theta = 90, width = 40, height = 40):
+        self.v = 20
+        self.w = width
+        self.h = height
+        self.local_centre = (1.5, 0)
+        self.damage = damage
+        self.owner = owner
+        self.type = "coinpr"
+        self.frames = 0
+
+        self.a = -80
+
+        self.x, self.y, self.theta = x, y, theta
+
+        self.team = self.owner.getTeam()
+
+        self.t = turtle.RawTurtle(sc)
+        self.t.hideturtle()
+        self.t.penup()
+        self.t.shape("coin")
+        self.t.shapesize(4,4)
+        self.t.seth(self.theta)
+
+        self.t.goto(self.x, self.y)
+        self.t.showturtle()
+        self.stun = 10
+
+    def move(self):
+        dt = 1/frameD
+        th = math.radians(self.theta)
+
+        vx = self.v * math.cos(th)
+        vy = self.v * math.sin(th)
+
+        vx_new = vx
+        vy_new = vy + self.a * dt
+
+        self.v = math.hypot(vx_new, vy_new)
+        self.theta = math.degrees(math.atan2(vy_new, vx_new))
+
+        self.setPos(self.x + vx_new, self.y + vy_new)
+        self.frames+=1
+
+ONE = "midnightblue"
+TWO  = "deeppink"
+THREE = "blueviolet"
+OUTLINE = ""
+pixels = [
+
+    (-1, 1, ONE), (0, 1, ONE), (1, 1, ONE),
+    (-1, 0, TWO), (0, 0, TWO), (1, 0, TWO),
+    (-1, -1, THREE), (0, -1, THREE), (1, -1, THREE),
+]
+
+shape = turtle.Shape("compound")
+for x, y, color in pixels:
+    square = [(x, y), (x + 1, y), (x + 1, y + 1), (x, y + 1)]
+    shape.addcomponent(square, fill=color, outline=OUTLINE)
+sc.register_shape("lazer", shape)
+
+
+class Lazer(Projectile):
+    def __init__(self, x, y, theta, owner, lf, damage=1, width = 15, height = 2000):
+        self.v = 0
+        self.w = width
+        self.h = height
+        self.local_centre = (0, 0)
+        self.damage = damage
+        self.owner = owner
+        self.type = "beam"
+        self.lf = lf
+
+        ax = 1000 * math.cos(math.radians(theta-90)) * 1
+        ay = 1000 * math.sin(math.radians(theta-90)) * 1
+
+        self.x, self.y, self.theta = x, y, theta
+
+        self.team = self.owner.getTeam()
+
+        self.t = turtle.RawTurtle(sc)
+        self.t.hideturtle()
+        self.t.penup()
+        self.t.shape("lazer")
+        self.t.shapesize(1000, 15)
         self.t.color("greenyellow")
         self.t.seth(self.theta)
 
@@ -1590,8 +2285,10 @@ def rectHit(rcts):
     return True
 
 
-baseWalls()
+#baseWalls()
+#baseBg(sc)
 circ = testCirc()
+
 for item in circ:
     if item.getWeapon()=="sword":
         objs.append(item.equip(Sword()))
@@ -1603,21 +2300,39 @@ for item in circ:
         objs.append(item.equip(Dagger()))
     elif item.getWeapon()=="perfect":
         objs.append(item.equip(Perfect()))
-    elif item.getWeapon()=="shotgun":
-        objs.append(item.equip(Shotgun()))
+    elif item.getWeapon()=="haymaker":
+        objs.append(item.equip(Haymaker()))
     elif item.getWeapon()=="igneous":
         objs.append(item.equip(Igneous()))
+    elif item.getWeapon()=="bayonet":
+        objs.append(item.equip(Bayonet()))
+    elif item.getWeapon()=="coin":
+        objs.append(item.equip(Coin()))
 
-#Score = turtle.Turtle()
-#Score.penup()
-#Score.hideturtle()
-#Score.color("lightcyan4")
 
 
 
 def tick():
-    global xframe, prjs, objs, circ
+    global xframe, prjs, objs, circ, frame_times, last_fps, animcx
     xframe+=1
+
+
+
+
+    now = time.perf_counter()
+    frame_times.append(now)
+
+    if len(frame_times) > 1:
+        elapsed = frame_times[-1] - frame_times[0]
+        fps = (len(frame_times) - 1) / elapsed if elapsed > 0 else 0
+    else:
+        fps = 0
+
+    fps_label.config(text=f"FPS: {fps:.1f}")
+
+
+
+
 
     for item in circ:
         coord, radius = item.getPos(), item.getTurt()[1]*10
@@ -1671,6 +2386,7 @@ def tick():
             if circHit(obj, circle)==True:
                 if not(circle.getTurt()[2]==obj.getTeam()) and circle.immunity(gt=True)==False and obj.getOwner().immunity(gt=True)==False and obj.getDamg()>0:
                     attr = obj.hit()
+                    circle.setNm(0)
 
                     circle.takeDamg(attr[0])
 
@@ -1685,6 +2401,12 @@ def tick():
 
         for prj in prjs:
             if circHit(prj, circle)==True:
+                if prj.getType()=="coinpr" and prj.getOwner().getOwner().getTurt()[3]==circle.getTurt()[3] and prj.getFrames()>14:
+                    prjs += circle.getWeapon().prself()
+                    prj.hide()
+                    prjs.remove(prj)
+
+
                 if not(circle.getTurt()[2]==prj.getTeam()) and circle.immunity(gt=True)==False and prj.getOwner().getOwner().immunity(gt=True)==False:
 
                     if prj.getType()=="pellet":
@@ -1734,12 +2456,11 @@ def tick():
                         prjs.remove(prj)
 
 
-    st = ""
     for item in circ:
-        if item.immunity(gt=True)==False:
+        if item.immunity(gt=True)==False and item.getNm()==0:
             item.move()
         item.redu()
-        st+=item.getWeapon().stats()
+
 
     for item in circ:
         if item.getDead()==True:
@@ -1756,10 +2477,16 @@ def tick():
     for item in prjs:
         item.move()
         [ax, ay] = item.getCenter()
-        if (ax>250 or ax<-250 or ay>250 or ay<-250):
-            if not item.getType()=="hcal" and not item.getType()=="beam":
-                item.hide()
-                prjs.remove(item)
+        if item.getType()=="coinpr":
+            if (ax>250 or ax<-250 or ay<-250):
+                if not item.getType()=="hcal" and not item.getType()=="beam":
+                    item.hide()
+                    prjs.remove(item)
+        else:
+            if (ax>250 or ax<-250 or ay>250 or ay<-250):
+                if not item.getType()=="hcal" and not item.getType()=="beam":
+                    item.hide()
+                    prjs.remove(item)
 
         if item.getType()=="pellet" or item.getType()=="hcal" or item.getType()=="beam":
             if item.lifetime()==True:
@@ -1769,15 +2496,24 @@ def tick():
                 except:
                     pass
 
-    turtle.update()
 
-    sc.ontimer(tick, frame_delay_ms)
+    for i, item in enumerate(circ[:4]):
+        gtxstats[i].update_text(item.getWeapon().stats()[1], item.getWeapon().stats()[0])
+
+    if xframe%10==0:
+        animcx+=1
+        animgtx(animcx)
+        pass
+
+    sc.update()
+    #root.update_idletasks()
 
 
+    root.after(frame_delay_ms, func=tick)
 
 
 
 tick()
 
 
-sc.mainloop()
+root.mainloop()
